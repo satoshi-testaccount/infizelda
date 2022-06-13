@@ -1,0 +1,326 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Infinite Dungeon: Map Quest</title>
+    <link rel="icon" type="image/vnd.microsoft.icon" href="/code/loc/favicon.ico"/>
+    <link rel='stylesheet' href='/code/loc/Canvassa/loc.css'/>
+
+    <script data-dojo-config="parseOnLoad: false, isDebug: false, modulePaths:{ 'loc': '/code/loc/Canvassa' }"
+        src="/js/dojo-release-1.6.1-src/dojo/dojo.js"></script>
+        <!--src="http://o.aolcdn.com/dojo/1.6/dojo/dojo.js"></script-->
+
+    <link rel="stylesheet" href="/fonts/silkscreen/stylesheet.css" type="text/css" charset="utf-8">
+    <style type="text/css">
+        h1 {
+            font: 60px/68px 'SilkscreenNormal', Arial, sans-serif;
+            letter-spacing: 0;
+            margin: 0; padding: 0;
+            /*text-align: center;*/
+            color: #ec9b00;
+        }
+        h1 .left {
+            text-shadow: 1px 1px rgba(255,128,0,.7),
+                2px 2px rgba(0,0,0,.7),
+                3px 3px rgba(0,0,0,.7),
+                4px 4px rgba(0,0,0,.7),
+                5px 5px rgba(0,0,0,.7);
+        }
+        h1 .right {
+            text-shadow: -1px 1px rgba(255,128,0,.7),
+                -2px 2px rgba(0,0,0,.7),
+                -3px 3px rgba(0,0,0,.7),
+                -4px 4px rgba(0,0,0,.7),
+                -5px 5px rgba(0,0,0,.7);
+        }
+
+
+        canvas {
+            border: 6px double black;
+        }
+        #mapCanvas {
+            top: 80px;
+            left: 20px;
+        }
+
+        #messages {
+            font: 8pt 'SilkscreenNormal', Arial, sans-serif;
+            border: 6px double black;
+            background-color: black;
+            color: white;
+
+            position: absolute;
+            top: 260px; left: 20px;
+            height: 136px; width: 252px;
+        }
+        #message_fader {
+            border: none;
+
+            position: absolute;
+            top: 260px; left: 20px;
+            height: 148px; width: 264px;
+
+            background-color: transparent;
+            background-image:    -moz-linear-gradient(top, rgba(0,0,0,0), rgba(0,0,0,1));
+            background-image:      -o-linear-gradient(top, rgba(0,0,0,0), rgba(0,0,0,1));
+            background-image:        -webkit-gradient(linear,left top,left bottom,color-stop(0, rgba(0,0,0,0)),color-stop(1, rgba(0,0,0,1)));
+            background-image: -webkit-linear-gradient(rgba(0,0,0,0), rgba(0,0,0,1));
+            background-image:         linear-gradient(top, rgba(0,0,0,0), rgba(0,0,0,0));
+        }
+
+        #floorCanvas, #spriteCanvas {
+            top: 80px;
+            left: 296px;
+        }
+
+        .commands {
+            border: 6px double black;
+            margin: 0; padding: 0;
+
+            position: absolute;
+            left: 20px; top: 420px;
+            width: 756px;
+
+            font: 12pt 'SilkscreenNormal', Arial, sans-serif;
+            font-weight: bold;
+        }
+        .commands button {
+            padding: 0; margin: 0;
+            height: 30px;
+
+            border: 1px solid #333;
+            text-align: center;
+            text-decoration: none;
+
+            background-color: #C0C0C0;
+            background-image: -webkit-gradient(linear, left top, left bottom, from(#C0C0C0), to(#A0A0A0));
+            background-image: -webkit-linear-gradient(top, #C0C0C0, #A0A0A0);
+            background-image:    -moz-linear-gradient(top, #C0C0C0, #A0A0A0);
+            background-image:     -ms-linear-gradient(top, #C0C0C0, #A0A0A0);
+            background-image:      -o-linear-gradient(top, #C0C0C0, #A0A0A0);
+            background-image:         linear-gradient(top, #C0C0C0, #A0A0A0);
+                      filter: progid:DXImageTransform.Microsoft.gradient(startColorStr='#C0C0C0', EndColorStr='#A0A0A0');
+
+               -moz-border-radius: 3px;
+            -webkit-border-radius: 3px;
+                    border-radius: 3px;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            padding: 10px;
+
+            background-color: #DDDD66;
+            background-image: -webkit-gradient(linear, left top, left bottom, from(#DDDD66), to(#EC9B00));
+            background-image: -webkit-linear-gradient(top, #DDDD66, #EC9B00);
+            background-image:    -moz-linear-gradient(top, #DDDD66, #EC9B00);
+            background-image:     -ms-linear-gradient(top, #DDDD66, #EC9B00);
+            background-image:      -o-linear-gradient(top, #DDDD66, #EC9B00);
+            background-image:         linear-gradient(top, #DDDD66, #EC9B00);
+                      filter: progid:DXImageTransform.Microsoft.gradient(startColorStr='#DDDD66', EndColorStr='#EC9B00');
+
+
+            border-top: 1px solid #CC8500;
+          -webkit-box-shadow: 0px 0px -4px #CC8500;
+             -moz-box-shadow: 0px 0px -4px #CC8500;
+                  box-shadow: 0px 0px -4px #CC8500;
+        }
+        footer .sig { float: left; }
+        footer .copy { float: right; }
+    </style>
+    </head>
+    <body>
+        <header>
+            <h1><span class='left'>Infinite</span> <span class='right'>Dungeon!</span></h1>
+        </header>
+
+        <canvas id="mapCanvas" width="256" height="160"></canvas>
+        <div id="throbber"><img src="res/wait.gif" /><br/>Loading resources...</div>
+        <div id="messages"></div>
+        <!--div id="message_fader"></div-->
+        <canvas id="floorCanvas" width="480" height="320"></canvas>
+        <canvas id="spriteCanvas" width="480" height="320"></canvas>
+
+        <audio id="sndBGM" preload loop>
+            <source src="res/bgm.mp3" type="audio/mpeg" />
+            <source src="res/bgm.ogg" type="audio/ogg" />
+        </audio>
+        <audio id="sndItem" preload>
+            <source src="res/item.mp3" type="audio/mpeg" />
+            <source src="res/item.ogg" type="audio/ogg" />
+        </audio>
+        <audio id="sndStairs" preload>
+            <source src="res/stairs.mp3" type="audio/mpeg" />
+            <source src="res/stairs.ogg" type="audio/ogg" />
+        </audio>
+        <audio id="sndWin" preload>
+            <source src="res/win.mp3" type="audio/mpeg" />
+            <source src="res/win.ogg" type="audio/ogg" />
+        </audio>
+
+        <div class="commands">
+            <button onclick="nosound_onclick();">Mute</button>
+            <button onclick="game.reset();">Reset</button>
+        </div>
+        <footer id="infoPane">
+            <span rel="me" class="sig">Coded by <a href="http://buyog.com">Buyog</a>
+                (Inspired by the maze generation work done by
+                <a href="http://weblog.jamisbuck.org/2011/2/7/maze-generation-algorithm-recap">Jamis Buck</a>)</span>
+            <span class="copy">All images and music are owned by <a href="http://nintendo.com">Nintendo</a>; this is just my little tribute.</span>
+        </footer>
+    </body>
+    <script src="mapQuest.js"></script>
+    <script>
+        dojo.addOnLoad(function init_loader(){
+            window.noSound = false;
+            window.sounds = {
+                'bgm'    : dojo.byId('sndBGM'),
+                'item'   : dojo.byId('sndItem'),
+                'stairs' : dojo.byId('sndStairs'),
+                'win'    : dojo.byId('sndWin')
+            }
+            // hack to make background music continuous-loop
+            if (typeof sounds.bgm.loop != 'boolean') {
+                dojo.connect(sounds.bgm, "onended", function() {
+                    this.currentTime = 0;
+                    this.play();
+                });
+            }
+            dojo.connect(sounds.item, 'onended', snd_ended);
+            dojo.connect(sounds.stairs, 'onended', snd_ended);
+
+
+            // before ANYTHING else, see if we can get a canvas context
+            var big_canvas = dojo.byId('floorCanvas');
+            if (big_canvas.getContext){
+                dojo.require("loc.Preloader");
+                dojo.addOnLoad(preload);
+            } else {
+                // hide the "please wait" throbber & info pane
+                dojo.style("throbber","display","none");
+                dojo.style("infoPane","display","none");
+                // display an "o noes" message about the user's lack of canvasness
+                dojo.style("messages","top","80px");
+                game_message("Rats! It looks like your browser doesn't support HTML5 Canvas or Audio.\nSorry, I can't help you.\nYou could always try me in a newer browser, though. Even IE9.\nYes, really.");
+            }
+        }); // end of init_loader()
+
+        function preload() {
+            window.loader = new loc.Preloader({
+              images: {
+                title: "res/title.png",
+                map:   "res/map.png",
+                floor: "res/floor.png",
+                tiles: "res/underworld_tiles.png",
+                items: "res/items.png",
+                link:  "res/link.png"
+              },
+              modules: []
+            })
+
+            if (loader.ready()) {
+                init_game();
+                delete window.loader;
+            } else {
+                var listener = dojo.subscribe("loc.Preloader.onReady", function() {
+                    dojo.unsubscribe(listener);
+                    init_game();
+                    delete window.loader;
+                });
+            }
+        } // end of preload()
+
+        function init_game() {
+            window.game = new MapQuest();
+            game.init({
+                mapCanvasID: "mapCanvas",
+                floorCanvasID: "floorCanvas",
+                spriteCanvasID: "spriteCanvas"
+            });
+            dojo.connect(game, "gameStart", game_start);
+            dojo.connect(game, "message", game_message);
+            dojo.connect(game, "getItem", game_gotItem);
+            dojo.connect(game, "gameover", game_over);
+
+            // hide the "please wait" throbber
+            dojo.style("throbber","display","none")
+
+            // hook up the keyboard event handlers for player input
+            dojo.connect(window, "onkeydown", handle_keydown);
+        }
+
+        function game_start() {
+            sounds.bgm.currentTime = 0;
+            sounds.bgm.play();
+        }
+        function nosound_onclick() {
+            sounds.bgm.pause();
+            window.noSound = true;
+        }
+
+        function game_message(msg) {
+            dojo.byId('messages').innerHTML = msg.replace(/\n/g,"<p/>");
+        }
+
+        function game_gotItem(itm) {
+            if (!(noSound)) {
+                sounds.bgm.pause();
+                if (itm)
+                sounds.item.play();
+            }
+        }
+        function snd_ended() {
+            if (!(noSound)) {
+                sounds.bgm.play();
+            }
+        }
+        function play_stairs_sound() {
+            if (!(noSound)) {
+                sounds.bgm.pause();
+                sounds.stairs.play();
+            }
+        }
+
+        function game_over() {
+            if (!(noSound)) {
+                sounds.bgm.pause();
+                sounds.win.play();
+            }
+        }
+
+        /* handle user input/controls */
+        var isIE = navigator.appName.toLowerCase().indexOf("explorer") > -1;
+        handle_keydown = function(e){
+            var ev = isIE?event:e;
+
+            switch(ev.keyCode){
+                case 13: // ENTER
+                    game.start();
+                    break;
+                case 39: // right
+                    game.east();
+                    break;
+                case 37: // left
+                    game.west();
+                    break;
+                case 38: // up
+                    game.north();
+                    break;
+                case 40: // down
+                    game.south();
+                    break;
+                case 88: // X
+                    game.doAction();
+                    break;
+                case 188:  // < (up)
+                    if (game.up()) { play_stairs_sound(); }
+                    break;
+                case 190:  // > (down)
+                    if (game.down()) { play_stairs_sound(); }
+                    break;
+                default:
+                    //console.log(ev.keyCode);
+            }
+        }
+    </script>
+</html>
